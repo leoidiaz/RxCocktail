@@ -3,11 +3,11 @@
 ## Description: 
 App to browse cocktails by alcohol ingredient. Cocktail data provided by [TheCocktailDB](https://www.thecocktaildb.com)
 Features a search bar to quickly find a cocktail and a detail page with all the ingredients needed.
-
-<img src= "Screenshots/screenshot1.png">
-<img src= "Screenshots/screenshot2.png">
-<img src= "Screenshots/screenshot3.png">
-
+<p>
+<img src= "Screenshots/screenshot1.png" width = "200">
+<img src= "Screenshots/screenshot2.png" width = "200">
+<img src= "Screenshots/screenshot3.png" width = "200">
+</p>
 
 ### Built with:
 - [RxSwift](https://github.com/ReactiveX/RxSwift)
