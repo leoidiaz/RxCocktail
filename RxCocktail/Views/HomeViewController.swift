@@ -13,6 +13,7 @@ class HomeViewController: UIViewController {
     // MARK: - Views
     lazy var menuButton: UIBarButtonItem = {
         let button = UIBarButtonItem(systemItem: .bookmarks, menu: configureMenu())
+        button.tintColor = UIColor.orange
         return button
     }()
     
@@ -24,16 +25,24 @@ class HomeViewController: UIViewController {
     // MARK: - Properties
     private let tableView: UITableView = UITableView(frame: .zero, style: .insetGrouped)
     private var filteredList: [Cocktail] = []
-    private let viewModel: CocktailViewModel = CocktailViewModel()
+    private let viewModel: CocktailViewModel!
     private var disposeBag = DisposeBag()
     
     // MARK: - Lifecycle
+    init(viewModel: CocktailViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "RxCocktail"
+        title = "Cocktails"
         navigationItem.rightBarButtonItem = menuButton
         navigationItem.searchController = searchBarController
-        viewModel.ingredient = menuButton.menu?.selectedElements.first?.title ?? ""
         configureTableView()
     }
     
@@ -76,7 +85,7 @@ class HomeViewController: UIViewController {
             let base = alcohol.rawValue.capitalized
             let ingredient = UIAction(title: base, image: nil, state: .on) { [weak self] action in
                 guard let strongSelf = self else { return }
-                strongSelf.viewModel.ingredient = base
+                strongSelf.viewModel.ingredient.accept(base)
             }
             return ingredient
         }
@@ -95,7 +104,11 @@ class HomeViewController: UIViewController {
     }
 }
 
-extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
+extension HomeViewController: UITableViewDelegate, UITableViewDataSource, CocktailCellDelegate {
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 65
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return filteredList.count
     }
@@ -103,15 +116,27 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CocktailCell.reuseIdentifier, for: indexPath) as? CocktailCell else { return UITableViewCell() }
         let cocktail = filteredList[indexPath.row]
-        cell.configureCell(cocktail: cocktail)
+        cell.delegate = self
+        cell.cocktailTitle.text = cocktail.name
+        configureCell(cocktail: cocktail, favoriteCocktail: nil, imageView: cell.cocktailImageView)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let cocktail = filteredList[indexPath.row]
-        let vm = CocktailDetailViewModel(cocktail: cocktail)
-        let detailsViewController = DetailsViewController(viewModel: vm)
+        let cell = tableView.cellForRow(at: indexPath) as? CocktailCell
+        let favoriteCocktail = viewModel.fetchFavoriteCocktail(cocktailID: cocktail.id)
+        let detailViewModel = CocktailDetailViewModel(cocktail: cocktail,
+                                                      cocktailImage: cell?.cocktailImageView.image,
+                                                      favoriteCocktail: favoriteCocktail,
+                                                      fromDisk: false)
+        let detailsViewController = DetailsViewController(viewModel: detailViewModel)
         navigationController?.present(detailsViewController, animated: true)
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    func configureCell(cocktail: Cocktail?, favoriteCocktail: FavoriteCocktail?, imageView: UIImageView) {
+        guard let cocktail = cocktail else { return }
+        viewModel.loadCellImage(cocktail: cocktail, imageView: imageView)
     }
 }

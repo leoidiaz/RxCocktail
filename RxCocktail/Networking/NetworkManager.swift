@@ -34,6 +34,16 @@ struct NetworkManager {
         }
     }
     
+    static func fetchImage(imageURL: URL, completion: @escaping (UIImage?) -> Void) {
+        SDWebImageManager.shared.loadImage(with: imageURL, options: [.highPriority, .progressiveLoad], progress: nil) { image, _, error, cache, _, _ in
+            if let error = error {
+                print("Error in \(#function) : \(error.localizedDescription) \n---\n \(error)")
+                completion(nil)
+            }
+                completion(image)
+        }
+    }
+    
     static func fetchDetails(cocktailName: String, completion: @escaping DetailDrinksCompletion) {
         let path = "/api/json/v1/1/search.php"
         let query = "s="

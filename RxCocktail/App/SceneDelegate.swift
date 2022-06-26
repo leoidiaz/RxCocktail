@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -18,9 +19,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
-        let navController = UINavigationController(rootViewController: HomeViewController())
-        navController.navigationBar.prefersLargeTitles = true
-        window?.rootViewController = navController
+        let tabBar = configTabBatController()
+        window?.rootViewController = tabBar
         window?.makeKeyAndVisible()
     }
 
@@ -50,8 +50,22 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+        SDImageCache.shared.clear(with: .all)
     }
 
-
+    private func configTabBatController() -> UITabBarController {
+        let tabBar = UITabBarController()
+        tabBar.tabBar.tintColor = .orange
+        let homeViewController = UINavigationController(rootViewController: HomeViewController(viewModel: CocktailViewModel()))
+        homeViewController.navigationBar.prefersLargeTitles = true
+        let cocktailsTabBarItem = UITabBarItem(title: "Cocktails", image: UIImage(systemName: "menucard"), selectedImage: UIImage(systemName: "menucard.fill"))
+        homeViewController.tabBarItem = cocktailsTabBarItem
+        let favoritesViewController = UINavigationController(rootViewController: FavoritesViewController(viewModel: CocktailFavoriteViewModel()))
+        let favoritesTabBarItem = UITabBarItem(title: "Favorites", image: UIImage(systemName: "star"), selectedImage: UIImage(systemName: "star.fill"))
+        favoritesViewController.tabBarItem = favoritesTabBarItem
+        favoritesViewController.navigationBar.prefersLargeTitles = true
+        tabBar.setViewControllers([homeViewController, favoritesViewController], animated: false)
+        return tabBar
+    }
 }
 
