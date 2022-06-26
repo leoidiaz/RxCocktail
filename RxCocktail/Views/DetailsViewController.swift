@@ -10,6 +10,12 @@ import RxSwift
 import SDWebImage
 
 class DetailsViewController: UIViewController {
+    struct Constants {
+        static let star = "star"
+        static let starFill = "star.fill"
+        static let padding: CGFloat = 16
+        static let imageSize: CGFloat = 250
+    }
     // MARK: - Properties
     private var viewModel: CocktailDetailViewModel!
     private var disposeBag: DisposeBag = DisposeBag()
@@ -19,6 +25,15 @@ class DetailsViewController: UIViewController {
         let barButton = UIButton(type: .close)
         barButton.translatesAutoresizingMaskIntoConstraints = false
         return barButton
+    }()
+    
+    lazy var favoriteButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.tintColor = UIColor.orange
+        button.setImage(UIImage(systemName: Constants.star, withConfiguration: UIImage.large()), for: .normal)
+        button.setImage(UIImage(systemName: Constants.starFill, withConfiguration: UIImage.large()), for: .selected)
+        return button
     }()
     
     lazy var progressIndicator: UIActivityIndicatorView = {
@@ -31,14 +46,14 @@ class DetailsViewController: UIViewController {
     
     lazy var titleLabel: UILabel = {
         let title = UILabel()
-        title.numberOfLines = 1
+        title.numberOfLines = 0
         title.translatesAutoresizingMaskIntoConstraints = false
         title.font = .preferredFont(forTextStyle: .title2)
         return title
     }()
     
     lazy var imageView: UIImageView = {
-        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 250, height: 250))
+        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: Constants.imageSize, height: Constants.imageSize))
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.layer.cornerRadius = imageView.frame.height / 2
         imageView.clipsToBounds = true
@@ -68,6 +83,7 @@ class DetailsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configView()
+        configFavorite()
         addConstraints()
     }
     
@@ -86,16 +102,27 @@ class DetailsViewController: UIViewController {
             result == true ? self?.progressIndicator.startAnimating() : self?.progressIndicator.stopAnimating()
         }).disposed(by: disposeBag)
         
-        viewModel.details.asObservable().subscribe(onNext: { [weak self] item in
-            if let image = SDImageCache.shared.imageFromCache(forKey: item.cocktail?.image) {
-                self?.imageView.image = image
+        titleLabel.text = viewModel.cocktail?.name ?? viewModel.favoriteCocktail?.name
+        
+        viewModel.isFavorite.asObservable().subscribe { [weak self] isFavorite in
+            if let isFavorite = isFavorite.element {
+                self?.favoriteButton.isSelected = isFavorite
             }
-            self?.titleLabel.text = item.cocktail?.name
-        }).disposed(by: disposeBag)
+        }.disposed(by: disposeBag)
         
         viewModel.ingredients.asObservable().subscribe(onNext: { [weak self] _ in
             self?.tableView.reloadData()
         }).disposed(by: disposeBag)
+        
+        viewModel.shouldDismiss.asObservable().subscribe { [weak self] value in
+            if let value = value.element, value {
+                self?.dismiss(animated: true)
+            }
+        }.disposed(by: disposeBag)
+    }
+    
+    @objc func favoriteButtonToggle() {
+        viewModel.didToggleFavorite()
     }
     
     @objc func closeButtonAction() {
@@ -104,24 +131,27 @@ class DetailsViewController: UIViewController {
     
     private func addConstraints(){
         NSLayoutConstraint.activate([
-            closeButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
-            closeButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            closeButton.topAnchor.constraint(equalTo: view.topAnchor, constant: Constants.padding),
+            closeButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.padding),
+            
+            favoriteButton.topAnchor.constraint(equalTo: view.topAnchor, constant: Constants.padding),
+            favoriteButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.padding),
             
             progressIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             progressIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
-            imageView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 16),
+            imageView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: Constants.padding),
             imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 250),
-            imageView.widthAnchor.constraint(equalToConstant: 250),
+            imageView.heightAnchor.constraint(equalToConstant: Constants.imageSize),
+            imageView.widthAnchor.constraint(equalToConstant: Constants.imageSize),
             
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -16),
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: Constants.padding),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -Constants.padding),
             titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
-            tableView.leadingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: -16),
-            tableView.trailingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 16),
+            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: Constants.padding),
+            tableView.leadingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: -Constants.padding),
+            tableView.trailingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: Constants.padding),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
@@ -138,6 +168,12 @@ class DetailsViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
         closeButton.addTarget(self, action: #selector(closeButtonAction), for: .touchUpInside)
+        imageView.image = viewModel.cocktailImage
+    }
+    
+    private func configFavorite() {
+        favoriteButton.addTarget(self, action: #selector(favoriteButtonToggle), for: .touchUpInside)
+        view.addSubview(favoriteButton)
     }
 }
 

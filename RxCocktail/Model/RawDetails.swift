@@ -8,10 +8,10 @@
 import Foundation
 
 struct DetailDrink: Decodable {
-    var drinks: [Ingredients]
+    var drinks: [RawDetails]
 }
 
-struct Ingredients: Decodable {
+struct RawDetails: Decodable {
     var strIngredient1: String?
     var strIngredient2: String?
     var strIngredient3: String?
