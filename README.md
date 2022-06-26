@@ -19,6 +19,7 @@ Features a search bar to quickly find a cocktail and a detail page with all the 
 - UIKit
 - Programmatic UI
 - iOS 14+ Cell Content Configuration
+- Core Data
 
 **TODO:** 
 - [ ] CoreData for local storage
