@@ -6,7 +6,9 @@ Features a search bar to quickly find a cocktail and a detail page with all the 
 <p>
 <img src= "Screenshots/screenshot1.png" width = "200">
 <img src= "Screenshots/screenshot2.png" width = "200">
+
 <img src= "Screenshots/screenshot3.png" width = "200">
+<img src= "Screenshots/screenshot4.png" width = "200">
 </p>
 
 ### Built with:
